@@ -83,10 +83,7 @@ void AutoExpandingTreeView::ItemClicked(const QModelIndex& index) {
   setExpanded(index, !isExpanded(index));
 }
 
-void AutoExpandingTreeView::mouseDoubleClickEvent(QMouseEvent* event) {
-  QTreeView::mouseDoubleClickEvent(event);
-
-  QModelIndex index = indexAt(event->pos());
+void AutoExpandingTreeView::ItemDoubleClicked(const QModelIndex& index) {
   ignore_next_click_ = true;
 
   if (add_on_double_click_) {
@@ -96,6 +93,12 @@ void AutoExpandingTreeView::mouseDoubleClickEvent(QMouseEvent* event) {
     }
     emit AddToPlaylistSignal(data);
   }
+}
+
+void AutoExpandingTreeView::mouseDoubleClickEvent(QMouseEvent* event) {
+  QTreeView::mouseDoubleClickEvent(event);
+
+  ItemDoubleClicked(indexAt(event->pos()));
 }
 
 void AutoExpandingTreeView::mousePressEvent(QMouseEvent* event) {
@@ -116,10 +119,15 @@ void AutoExpandingTreeView::mousePressEvent(QMouseEvent* event) {
 }
 
 void AutoExpandingTreeView::keyPressEvent(QKeyEvent* e) {
+  QModelIndex index = currentIndex();
+
   switch (e->key()) {
     case Qt::Key_Enter:
     case Qt::Key_Return:
-      if (currentIndex().isValid()) emit doubleClicked(currentIndex());
+      if (index.isValid()) {
+        ItemDoubleClicked(index);
+        emit doubleClicked(index);
+      }
       e->accept();
       break;
 
@@ -130,8 +138,6 @@ void AutoExpandingTreeView::keyPressEvent(QKeyEvent* e) {
       break;
 
     case Qt::Key_Left:
-      QModelIndex index = currentIndex();
-
       // Set focus on the root of the current branch
       if (index.isValid() && index.parent() != rootIndex() &&
           (!isExpanded(index) || model()->rowCount(index) == 0)) {
